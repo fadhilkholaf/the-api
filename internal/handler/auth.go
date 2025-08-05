@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -47,7 +46,9 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
-	r := h.db.WithContext(ctx).Create(&model.User{Username: user.Username, Password: string(p)})
+	user.Password = string(p)
+
+	r := h.db.WithContext(ctx).Create(&user)
 
 	var pgErr *pgconn.PgError
 
@@ -66,20 +67,27 @@ func (h *Handler) Register(c *gin.Context) {
 		if isErr {
 			switch pgErr.Code {
 			case "23505":
-				log.Println(pgErr.Error())
+				c.JSON(http.StatusConflict, gin.H{
+					"message": "Error username has been taken!",
+					"data":    nil,
+					"error":   pgErr.Error(),
+				})
+				return
+			case "22P02":
+				c.JSON(http.StatusBadRequest, gin.H{
+					"message": "Error invalid role!",
+					"data":    nil,
+					"error":   pgErr.Error(),
+				})
+				return
 			default:
-				log.Println("err skipped")
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"message": "Unexpected database error!",
+					"data":    nil,
+					"error":   pgErr.Error(),
+				})
+				return
 			}
-			return
-		}
-
-		if r.Error == gorm.ErrDuplicatedKey {
-			c.JSON(http.StatusConflict, gin.H{
-				"message": "Error username has been taken!",
-				"data":    nil,
-				"error":   r.Error.Error(),
-			})
-			return
 		}
 
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -90,10 +98,33 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
+	t := jwt.NewWithClaims(jwt.SigningMethodHS256, &config.JwtClaims{
+		Role: user.Role,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   strconv.FormatUint(user.Id, 10),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	})
+	s, err := t.SignedString([]byte(os.Getenv("JWT_KEY")))
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Error signin token!",
+			"data":    nil,
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.SetCookie("token", s, 28800, "/", "localhost", true, true)
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Register success.",
-		"data":    nil,
-		"error":   nil,
+		"data": gin.H{
+			"token": s,
+		},
+		"error": nil,
 	})
 }
 
@@ -157,8 +188,8 @@ func (h *Handler) LogIn(c *gin.Context) {
 
 	t := jwt.NewWithClaims(jwt.SigningMethodHS256, &config.JwtClaims{
 		Role: user.Role,
-		RegisteredClaims: &jwt.RegisteredClaims{
-			Subject:   strconv.FormatUint(uint64(user.ID), 10),
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   strconv.FormatUint(user.Id, 10),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -175,6 +206,7 @@ func (h *Handler) LogIn(c *gin.Context) {
 	}
 
 	c.SetCookie("token", s, 28800, "/", "localhost", true, true)
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Log in success.",
 		"data": gin.H{
@@ -186,6 +218,7 @@ func (h *Handler) LogIn(c *gin.Context) {
 
 func (*Handler) LogOut(c *gin.Context) {
 	c.SetCookie("token", "", -1, "/", "localhost", true, true)
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Log out success.",
 		"data":    nil,

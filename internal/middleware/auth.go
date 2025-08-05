@@ -1,25 +1,19 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 	"os"
+	"slices"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+
+	"github.com/fadhilkholaf/go-gorm/internal/config"
+	"github.com/fadhilkholaf/go-gorm/internal/model"
 )
 
-var IsAdmin = "ADMIN"
-
-func Auth(role *string) gin.HandlerFunc {
-	log.Println("Auth middleware triggered.")
-
+func Auth(roles []model.Role) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if role == nil {
-			c.Next()
-			return
-		}
-
 		s, err := c.Cookie("token")
 
 		if err != nil {
@@ -31,22 +25,38 @@ func Auth(role *string) gin.HandlerFunc {
 			return
 		}
 
-		log.Println(s)
-
-		t, err := jwt.ParseWithClaims(s, &jwt.RegisteredClaims{}, func(t *jwt.Token) (any, error) {
+		t, err := jwt.ParseWithClaims(s, &config.JwtClaims{}, func(t *jwt.Token) (any, error) {
 			return []byte(os.Getenv("JWT_KEY")), nil
 		})
 
 		if err != nil {
-			log.Fatalf("Error parsing token: %s", err.Error())
-			c.AbortWithStatus(http.StatusUnauthorized)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"message": "Error parsing token!",
+				"data":    nil,
+				"error":   err.Error(),
+			})
 			return
 		}
 
-		log.Println(t)
+		claims, ok := t.Claims.(*config.JwtClaims)
 
-		if *role != "ADMIN" {
-			c.AbortWithStatus(http.StatusUnauthorized)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"message": "Error parsing claims!",
+				"data":    nil,
+				"error":   nil,
+			})
+			return
+		}
+
+		authorized := slices.Contains(roles, claims.Role)
+
+		if !authorized {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"message": "Error unauthorized role!",
+				"data":    nil,
+				"error":   nil,
+			})
 			return
 		}
 

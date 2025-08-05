@@ -39,7 +39,9 @@ func (h *Handler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	r := h.db.WithContext(ctx).Create(&model.User{Username: user.Username, Password: string(p)})
+	user.Password = string(p)
+
+	r := h.db.WithContext(ctx).Create(&user)
 
 	if r.Error != nil {
 		if ctx.Err() == context.DeadlineExceeded {

@@ -4,11 +4,10 @@ import (
 	"log"
 	"os"
 
+	"github.com/fadhilkholaf/go-gorm/internal/model"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-
-	"github.com/fadhilkholaf/go-gorm/internal/model"
 )
 
 func NewConnection() *gorm.DB {
@@ -18,13 +17,15 @@ func NewConnection() *gorm.DB {
 		log.Fatalf("Database connection error: %s", err.Error())
 	}
 
-	err = db.AutoMigrate(&model.User{})
+	return db
+}
+
+func Migrate(db *gorm.DB) {
+	err := db.AutoMigrate(&model.User{}, &model.Post{})
 
 	if err != nil {
-		log.Fatalf("Model migration error: %s", err.Error())
+		log.Fatalf("Unexpected error migrating model: %s", err.Error())
 	}
-
-	return db
 }
 
 func CloseConnection(db *gorm.DB) {
