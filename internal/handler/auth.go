@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"slices"
 	"strconv"
 	"time"
 
@@ -47,6 +48,12 @@ func (h *Handler) Register(c *gin.Context) {
 	}
 
 	user.Password = string(p)
+
+	validRole := slices.Contains([]model.Role{model.UserRole, model.AdminRole}, user.Role)
+
+	if !validRole {
+		user.Role = model.UserRole
+	}
 
 	r := h.db.WithContext(ctx).Create(&user)
 
@@ -98,7 +105,7 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
-	t := jwt.NewWithClaims(jwt.SigningMethodHS256, &config.JwtClaims{
+	t := jwt.NewWithClaims(jwt.SigningMethodHS256, config.JwtClaims{
 		Role: user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   strconv.FormatUint(user.Id, 10),
@@ -186,7 +193,7 @@ func (h *Handler) LogIn(c *gin.Context) {
 		return
 	}
 
-	t := jwt.NewWithClaims(jwt.SigningMethodHS256, &config.JwtClaims{
+	t := jwt.NewWithClaims(jwt.SigningMethodHS256, config.JwtClaims{
 		Role: user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   strconv.FormatUint(user.Id, 10),

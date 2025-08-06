@@ -1,9 +1,11 @@
 package middleware
 
 import (
+	"errors"
 	"net/http"
 	"os"
 	"slices"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -27,9 +29,18 @@ func Auth(roles []model.Role) gin.HandlerFunc {
 
 		t, err := jwt.ParseWithClaims(s, &config.JwtClaims{}, func(t *jwt.Token) (any, error) {
 			return []byte(os.Getenv("JWT_KEY")), nil
-		})
+		}, jwt.WithLeeway(5*time.Second))
 
 		if err != nil {
+			if errors.Is(err, jwt.ErrTokenExpired) {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"message": "Error token expired!",
+					"data":    nil,
+					"error":   err.Error(),
+				})
+				return
+			}
+
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"message": "Error parsing token!",
 				"data":    nil,
@@ -40,7 +51,7 @@ func Auth(roles []model.Role) gin.HandlerFunc {
 
 		claims, ok := t.Claims.(*config.JwtClaims)
 
-		if !ok {
+		if !ok || !t.Valid {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"message": "Error parsing claims!",
 				"data":    nil,

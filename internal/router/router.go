@@ -24,6 +24,7 @@ func NewRouter(db *gorm.DB) *gin.Engine {
 
 	userRoute(r, h)
 	authRoute(r, h)
+	postRoute(r, h)
 
 	return r
 }
