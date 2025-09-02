@@ -38,3 +38,5 @@ jobs:
           script: |
             sudo systemctl restart the-api
             sudo systemctl status the-api --no-pager
+            sudo systemctl restart caddy
+            sudo systemctl status caddy --no-pager
