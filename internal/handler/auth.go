@@ -124,7 +124,7 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("token", s, 28800, "/", "localhost", true, true)
+	c.SetCookie("token", s, 28800, "/", os.Getenv("APP_URL"), true, true)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Register success.",
@@ -212,7 +212,7 @@ func (h *Handler) LogIn(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("token", s, 28800, "/", "localhost", true, true)
+	c.SetCookie("token", s, 28800, "/", os.Getenv("APP_URL"), true, true)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Log in success.",
@@ -224,7 +224,7 @@ func (h *Handler) LogIn(c *gin.Context) {
 }
 
 func (*Handler) LogOut(c *gin.Context) {
-	c.SetCookie("token", "", -1, "/", "localhost", true, true)
+	c.SetCookie("token", "", -1, "/", os.Getenv("APP_URL"), true, true)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Log out success.",

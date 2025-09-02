@@ -2,6 +2,7 @@ package router
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -10,7 +11,7 @@ import (
 )
 
 func NewRouter(db *gorm.DB) *gin.Engine {
-	gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(os.Getenv("GIN_MODE"))
 
 	r := gin.Default()
 	h := handler.NewHandler(db)
