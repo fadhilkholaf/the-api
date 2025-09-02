@@ -10,6 +10,8 @@ import (
 )
 
 func NewRouter(db *gorm.DB) *gin.Engine {
+	gin.SetMode(gin.ReleaseMode)
+
 	r := gin.Default()
 	h := handler.NewHandler(db)
 
