@@ -22,7 +22,7 @@ func main() {
 	r := router.NewRouter(db)
 
 	srv := http.Server{
-		Addr:    ":8080",
+		Addr:    "127.0.0.1:8080",
 		Handler: r.Handler(),
 	}
 
