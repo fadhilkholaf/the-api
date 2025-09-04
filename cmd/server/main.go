@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"net/http"
 	"os/signal"
@@ -16,13 +17,16 @@ import (
 func main() {
 	config.InitEnv()
 
+	port := flag.String("port", "8080", "a port for running application")
+	flag.Parse()
+
 	db := database.NewConnection()
 	defer database.CloseConnection(db)
 
 	r := router.NewRouter(db)
 
 	srv := http.Server{
-		Addr:    "127.0.0.1:8080",
+		Addr:    "127.0.0.1:" + *port,
 		Handler: r.Handler(),
 	}
 
