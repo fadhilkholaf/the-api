@@ -28,7 +28,7 @@ jobs:
           key: ${{ secrets.VPS_KEY }}
           source: |
             main
-            ./public/**
+            /public
           target: "/home/fadhilkholaf/var/www/the-api/"
 
       - name: Restart Service 2
@@ -41,7 +41,7 @@ jobs:
             sudo systemctl restart the-api-8081.service
             sudo systemctl status the-api-8081.service --no-pager
             sleep 5
-            curl -f localhost:8080/ || exit 1
+            curl -f localhost:8080/status || exit 1
 
       - name: Restart Service 1
         uses: appleboy/ssh-action@v1.0.3
