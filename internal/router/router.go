@@ -13,23 +13,21 @@ import (
 func NewRouter(db *gorm.DB) *gin.Engine {
 	gin.SetMode(os.Getenv("GIN_MODE"))
 
-	r := gin.Default()
+	r := gin.New()
 	h := handler.NewHandler(db)
 
-	r.Use(gin.LoggerWithConfig(gin.LoggerConfig{
-		SkipPaths: []string{"/status"},
-	}))
+	r.GET("/status", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+	r.Use(gin.Logger(), gin.Recovery())
 	r.StaticFile("/favicon.ico", "./public/favicon.ico")
 	r.Static("/public", "./public")
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"message": "The Go api.",
+			"message": "The API.",
 			"data":    nil,
 			"error":   nil,
 		})
-	})
-	r.GET("/status", func(c *gin.Context) {
-		c.Status(http.StatusOK)
 	})
 
 	userRoute(r, h)
