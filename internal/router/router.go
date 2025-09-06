@@ -1,6 +1,7 @@
 package router
 
 import (
+	"io"
 	"net/http"
 	"os"
 
@@ -25,7 +26,8 @@ func NewRouter(db *gorm.DB) *gin.Engine {
 			"error":   nil,
 		})
 	})
-	r.GET("/status", func(c *gin.Context) {
+	status := r.Group("/status", gin.LoggerWithWriter(io.Discard))
+	status.GET("/", func(c *gin.Context) {
 		c.Status(http.StatusOK)
 	})
 
