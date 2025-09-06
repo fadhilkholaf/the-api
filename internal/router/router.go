@@ -25,6 +25,9 @@ func NewRouter(db *gorm.DB) *gin.Engine {
 			"error":   nil,
 		})
 	})
+	r.GET("/status", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
 
 	userRoute(r, h)
 	authRoute(r, h)
