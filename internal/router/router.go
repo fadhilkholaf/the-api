@@ -1,7 +1,6 @@
 package router
 
 import (
-	"io"
 	"net/http"
 	"os"
 
@@ -17,6 +16,9 @@ func NewRouter(db *gorm.DB) *gin.Engine {
 	r := gin.Default()
 	h := handler.NewHandler(db)
 
+	r.Use(gin.LoggerWithConfig(gin.LoggerConfig{
+		SkipPaths: []string{"/status"},
+	}))
 	r.StaticFile("/favicon.ico", "./public/favicon.ico")
 	r.Static("/public", "./public")
 	r.GET("/", func(c *gin.Context) {
@@ -26,8 +28,7 @@ func NewRouter(db *gorm.DB) *gin.Engine {
 			"error":   nil,
 		})
 	})
-	status := r.Group("/status", gin.LoggerWithWriter(io.Discard))
-	status.GET("/", func(c *gin.Context) {
+	r.GET("/status", func(c *gin.Context) {
 		c.Status(http.StatusOK)
 	})
 
